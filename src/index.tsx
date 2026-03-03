@@ -306,4 +306,32 @@ cmd
       index === 0 ? checkTimes[0] : checkTimes[index] - checkTimes[index - 1],
     );
   };
+  cmd
+    .subcommand("wikit-verify", "进行维基QQ号验证绑定。")
+    .alias("wikit-v")
+    .action(async (argv: Argv): Promise<string> => {
+      // 自动获取发送这条指令的用户的 QQ 号
+      const qq = argv.session.userId;
+      const token = "TOKEN被我吃掉了，你懂的";
+
+    try {
+        const response = await fetch("https://wikit.unitreaty.org/module/qq-verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ qq, token }).toString(),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === "success") {
+          return `验证请求成功！\n你的QQ：${qq}\n请点击以下链接完成绑定：\n${data["verification-link"]}`;
+        } else {
+          return `验证失败！\n返回信息：${data.message || JSON.stringify(data)}`;
+        }
+      } catch (err) {
+        return `请求发生错误：${err.message}`;
+      }
+    });
 }
