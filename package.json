@@ -26,7 +26,7 @@
     "koishi-thirdeye": "latest"
   },
   "devDependencies": {
-    "@koishijs/scripts": "latest",
+    "koishi-scripts": "4.5.3"
     "koishi-plugin-adapter-onebot": "latest",
     "typescript": "latest"
   },
