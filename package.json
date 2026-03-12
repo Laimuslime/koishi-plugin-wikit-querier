@@ -1,5 +1,5 @@
 {
-  "name": "koishi-plugin-wikit-querier"，
+  "name": "koishi-plugin-wikit-querier",
   "description": "使用WikitAPI的wikidot站点工具，自用",
   "version": "1.8.8",
   "main": "dist/index.js",
