@@ -1,6 +1,6 @@
-# Koishi-plugin-crom-querier-modified
+# Koishi-plugin-wikit-querier
 
-[![npm](https://img.shields.io/npm/v/koishi-plugin-crom-querier-modified?style=flat-square)](https://www.npmjs.com/package/koishi-plugin-crom-querier-modified)
+[![npm](https://img.shields.io/npm/v/koishi-plugin-wikit-querier?style=flat-square)](https://www.npmjs.com/package/koishi-plugin-wikit-querier)
 
-向wikit查询并返回文本的插件，自用
-"# koishi-plugin-crom-querier-modified" 
+使用WikitAPI的wikidot站点工具，自用
+

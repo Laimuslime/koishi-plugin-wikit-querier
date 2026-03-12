@@ -26,7 +26,6 @@ export interface AuthorRank {
   rank: number;
   name: string;
   value: number; // Represents total score
-  // 把这里面之前加的 articles 删掉，因为不在这一层
 }
 
 export interface UserQueryResponse {
@@ -36,6 +35,13 @@ export interface UserQueryResponse {
     pageInfo: {
       total: number;
     }
+  };
+  recent?: {
+    nodes: {
+      title: string;
+      url: string;
+      created_at: string;
+    }[];
   };
 }
 

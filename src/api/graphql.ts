@@ -31,6 +31,13 @@ export const queries = {
           total
         }
       }
+      recent: articles(wiki: [$baseUrl], author: $query, pageSize: 1) {
+        nodes {
+          title
+          url
+          created_at
+        }
+      }
     }
   `,
   userGlobalQuery: `
@@ -45,6 +52,13 @@ export const queries = {
           total
         }
       }
+      recent: articles(author: $query, pageSize: 1) {
+        nodes {
+          title
+          url
+          created_at
+        }
+      }
     }
   `,
   userRankQuery: gql`
@@ -57,4 +71,3 @@ export const queries = {
     }
   `,
 };
-

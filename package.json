@@ -1,7 +1,7 @@
 {
-  "name": "koishi-plugin-crom-querier-modified",
-  "description": "向Wikit查询并返回文本的插件，自用",
-  "version": "2.4.4",
+  "name": "koishi-plugin-wikit-querier",
+  "description": "使用WikitAPI的wikidot站点工具，自用",
+  "version": "1.8.7",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -9,10 +9,10 @@
     "dist"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/Laimuslime/koishi-plugin-crom-querier-modified",
+  "homepage": "https://github.com/Laimuslime/koishi-plugin-wikit-querier",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Laimuslime/koishi-plugin-crom-querier-modified.git"
+    "url": "git+https://github.com/Laimuslime/koishi-plugin-wikit-querier.git"
   },
   "keywords": [
     "chatbot",
@@ -24,5 +24,8 @@
   },
   "dependencies": {
     "@satorijs/element": "^3.1.8"
+  },
+  "devDependencies": {
+    "koishi-plugin-adapter-onebot": "^6.9.0"
   }
 }
