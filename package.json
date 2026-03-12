@@ -16,7 +16,7 @@
   },
 "scripts": {
     "dev": "cd ../.. && npm run dev",
-    "build": "npx koishi-scripts build",
+    "build": "athena-scripts build", 
     "postpublish": "npm run build"
   },
   "keywords": [
