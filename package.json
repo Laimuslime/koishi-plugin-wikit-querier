@@ -16,7 +16,6 @@
   },
 "scripts": {
     "dev": "cd ../.. && npm run dev",
-    "build": "koishi-scripts build",
     "postpublish": "npm run build"
   },
   "keywords": [
