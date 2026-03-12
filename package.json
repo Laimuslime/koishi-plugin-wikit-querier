@@ -16,7 +16,7 @@
   },
     "scripts": {
     "dev": "cd ../.. && npm run dev",
-    "build": "cd ../.. && npm run build crom-querier",
+    "build": "cd ../.. && npm run build wikit-querier",
     "postpublish": "npm run build"
   },
   "keywords": [
