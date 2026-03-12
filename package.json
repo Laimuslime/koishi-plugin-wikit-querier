@@ -32,5 +32,9 @@
   },
   "devDependencies": {
     "koishi-plugin-adapter-onebot": "^6.9.0"
+  },
+    "devDependencies": {
+    "koishi-scripts": "^4.5.1"
+  }
   }
 }
