@@ -652,7 +652,7 @@ export function apply(ctx: Context, config: Config): void {
       }
     });
 
-  cmd
+cmd
     .subcommand("wikit-search <...args:string>", "查询文章。")
     .alias("wikit-sr")
     .option("tags", "-t <tags:string> 按标签过滤（多个标签用中英文逗号分隔，全包含）")
@@ -687,7 +687,7 @@ export function apply(ctx: Context, config: Config): void {
           const tagsArray = options.tags.split(/[,，]/).map((t: string) => t.trim()).filter((t: string) => t);
           const payload: any = {
             query: `query tagSearch($wiki: [String], $query: String, $tags: [String!]) {
-              articles(wiki: $wiki, titleKeyword: $query, includeTags: $tags, page: 1, pageSize: 10) { nodes { title url author rating } }
+              articles(wiki: $wiki, titleKeyword: $query, includeTags: $tags, page: 1, pageSize: 10) { nodes { title url author rating comments } }
             }`,
             variables: { query: titleName, tags: tagsArray }
           };
@@ -711,7 +711,7 @@ export function apply(ctx: Context, config: Config): void {
         return (
           <template>
             <quote id={argv.session.event.message.id} />
-            {article.title}<br />评分：{article.rating}<br />作者：{article.author || "已注销"}<br />{normalizeUrl(article.url)}
+            {article.title}<br />评分：{article.rating}<br />评论：{article.comments}<br />作者：{article.author || "已注销"}<br />{normalizeUrl(article.url)}
           </template>
         );
       } catch (err: any) {

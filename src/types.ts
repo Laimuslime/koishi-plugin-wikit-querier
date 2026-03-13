@@ -4,6 +4,7 @@ export interface Article {
   url: string;
   author: string;
   rating: number;
+  comments: number;
 }
 
 export interface PageInfo {

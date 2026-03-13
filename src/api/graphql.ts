@@ -9,6 +9,7 @@ export const queries = {
           url
           author
           rating
+          comments
         }
         pageInfo {
           total
