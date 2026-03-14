@@ -22,7 +22,7 @@
     "plugin"
   ],
   "dependencies": {
-    "@satorijs/element": "latest",
+    "@satorijs/element": "latest"
   },
   "devDependencies": {
     "@koishijs/scripts": "4.5.2",
