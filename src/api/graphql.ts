@@ -2,8 +2,8 @@ const gql = (query: TemplateStringsArray, ...substitutions: unknown[]): string =
 
 export const queries = {
   titleQuery: gql`
-    query titleQuery($anyBaseUrl: [String], $query: String) {
-      articles(wiki: $anyBaseUrl, titleKeyword: $query, page: 1, pageSize: 20) {
+    query titleQuery($anyBaseWiki: [String], $query: String) {
+      articles(wiki: $anyBaseWiki, titleKeyword: $query, page: 1, pageSize: 20) {
         nodes {
           title
           url
@@ -21,18 +21,18 @@ export const queries = {
     }
   `,
  userQuery: `
-    query userQuery($query: String!, $baseUrl: String!) {
-      authorWikiRank(wiki: $baseUrl, name: $query, by: RATING) {
+    query userQuery($query: String!, $baseWiki: String!) {
+      authorWikiRank(wiki: $baseWiki, name: $query, by: RATING) {
         rank
         name
         value
       }
-      articles(author: $query, wiki: [$baseUrl]) {
+      articles(author: $query, wiki: [$baseWiki]) {
         pageInfo {
           total
         }
       }
-      recent: articles(wiki: [$baseUrl], author: $query, pageSize: 1) {
+      recent: articles(wiki: [$baseWiki], author: $query, pageSize: 1) {
         nodes {
           title
           url
@@ -63,8 +63,8 @@ export const queries = {
     }
   `,
   userRankQuery: gql`
-    query userRankQuery($baseUrl: String) {
-      authorRanking(wiki: $baseUrl, by: RATING) {
+    query userRankQuery($baseWiki: String) {
+      authorRanking(wiki: $baseWiki, by: RATING) {
         rank
         name
         value

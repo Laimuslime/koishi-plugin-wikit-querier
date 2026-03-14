@@ -5,7 +5,7 @@ const apiList: string[] = [
   "https://wikittest.unitreaty.org/apiv1/graphql",
 ];
 
-export const branchInfo: Record<string, { wiki: string }> = {
+export const WikiInfo: Record<string, { wiki: string }> = {
   /* 分部名称格式："站点简写": { wiki: "Wikit里的Wiki全名" }, 例如："ubmh": { wiki: "ubmh" } */
   "ubmh": { wiki: "ubmh" },
   "scp-cloud": { wiki: "scp-wiki-cloud" },
@@ -54,12 +54,12 @@ export async function wikitApiRequest(
   }
 
   let variables: Record<string, any> = {};
-  const branchLongName: string | null = branchInfo[name]?.wiki;
+  const branchLongName: string | null = WikiInfo[name]?.wiki;
 
    if (queryString.includes("query titleQuery")) {
-    variables = { query: param, anyBaseUrl: branchLongName ? [branchLongName] : null };
+    variables = { query: param, anyBaseWiki: branchLongName ? [branchLongName] : null };
   } else if (queryString.includes("query userQuery")) {
-    variables = { query: param, baseUrl: branchLongName };
+    variables = { query: param, baseWiki: branchLongName };
   } else if (queryString.includes("query userRankQuery")) {
     variables = { baseUrl: branchLongName };
   } else if (queryString.includes("query userGlobalQuery")) {

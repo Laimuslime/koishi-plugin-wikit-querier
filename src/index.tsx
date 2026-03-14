@@ -5,7 +5,7 @@ import {
   getBlacklist, getAdmins, getReportChannel, setReportChannel, botBan, memberAdminRequest, 
   qqVerify, qqUnbind, bindQuery, pageHistory, userRank, rawGraphql 
 } from "./api/index";
-import { branchInfo, wikitApiRequest } from "./lib";
+import { WikiInfo, wikitApiRequest } from "./lib";
 
 import type { Argv, Session } from "koishi";
 import type { Article, AuthorRank, TitleQueryResponse, UserQueryResponse, UserRankQueryResponse } from "./types";
@@ -20,7 +20,7 @@ interface WikitQuerierTable {
   id?: number;
   platform: string;
   channelId: string;
-  defaultBranch: string;
+  defaultWiki: string;
 }
 
 export const name: string = "wikit-querier";
@@ -61,7 +61,7 @@ export function apply(ctx: Context, config: Config): void {
     id: "unsigned",
     platform: "string(64)",
     channelId: "string(64)",
-    defaultBranch: "string(64)",
+    defaultWiki: "string(64)",
   });
 
   const normalizeUrl = (url: string): string =>
@@ -70,11 +70,11 @@ export function apply(ctx: Context, config: Config): void {
       .replace(/^https?:\/\/scp-wiki-cn.wikidot.com/, "https://scpcn.backroomswiki.cn")
       .replace(/^https?:\/\/([a-z]+-wiki-cn|nationarea)/, "https://$1");
   
-  const getDefaultBranch = async (session: Session): Promise<string | undefined> => {
+  const getDefaultWiki = async (session: Session): Promise<string | undefined> => {
     const platform = session.event.platform;
     const channelId = session.event.channel.id;
     const data = await ctx.database.get("wikitQuerier", { platform, channelId });
-    return data.length > 0 ? data[0].defaultBranch : undefined;
+    return data.length > 0 ? data[0].defaultWiki : undefined;
   };
 
   const sendReport = async (session: Session, notifyOpt: any, actionDesc: string) => {
@@ -145,22 +145,22 @@ export function apply(ctx: Context, config: Config): void {
   cmd
     .subcommand("wikit-list", "列出所有支持的网站。")
     .action(async (): Promise<string> => {
-      const entries = Object.entries(branchInfo);
+      const entries = Object.entries(WikiInfo);
       const lines = entries.map(([key, value]) => `站点名称：${value.wiki}\n简写：${key}`);
       return `支持的维基列表：\n${lines.join("\n")}`;
     });
 
   cmd
-    .subcommand("wikit-default-branch <维基名称:string>", "设置默认维基。")
+    .subcommand("wikit-default-wiki <维基名称:string>", "设置默认维基。")
     .alias("wikit-db")
-    .action(async (argv: Argv, branch: string): Promise<string> => {
+    .action(async (argv: Argv, wiki: string): Promise<string> => {
       const platform = argv.session.event.platform;
       const channelId = argv.session.event.channel.id;
-      if (!branch || !Object.keys(branchInfo).includes(branch) || branch === "all") {
+      if (!wiki || !Object.keys(WikiInfo).includes(wiki) || wiki === "all") {
         return "维基名称不正确。";
       }
-      ctx.database.upsert("wikitQuerier", [{ channelId, platform, defaultBranch: branch }], ["platform", "channelId"]);
-      return `已将本群默认查询维基设置为: ${branch}`;
+      ctx.database.upsert("wikitQuerier", [{ channelId, platform, defaultWiki: wiki }], ["platform", "channelId"]);
+      return `已将本群默认查询维基设置为: ${wiki}`;
     });
 
   cmd
@@ -190,28 +190,28 @@ export function apply(ctx: Context, config: Config): void {
     });
 
   cmd
-    .subcommand("wikit-ban <type:string> <id:string> [branch:string]", "拉黑指定的 QQ/WD 账号或进行分站站务操作 (仅限管理员)")
+    .subcommand("wikit-ban <type:string> <id:string> [wiki:string]", "拉黑指定的 QQ/WD 账号或进行分站站务操作 (仅限管理员)")
     .option("notify", "-n <channels:string> 临时指定通报的群号")
     .option("silent", "-s 静默拉黑，不发送任何通报")
     .option("remove", "-r 执行移除操作 (默认是封禁)")
-    .action(async ({ session, options }, type, id, branch): Promise<string> => {
+    .action(async ({ session, options }, type, id, wiki): Promise<string> => {
       if (!checkProxyStatus(BACKEND_URL + "/api/admins")) return "API请求失败，请稍后重试";
 
       const adminList = await getAdmins();
       const userId = String(session.userId);
       if (!adminList.includes(userId)) return "权限不足，你无法使用拉黑指令。";
-      if (!type || !id) return "参数缺失。用法：wikit-ban qq 12345678 或 wikit-ban wd username 或 wikit-ban site username branch [-r]";
+      if (!type || !id) return "参数缺失。用法：wikit-ban qq 12345678 或 wikit-ban wd username 或 wikit-ban site username wiki [-r]";
 
       const opts: any = options || {};
 
       if (type === "-site" || type === "site") {
-        if (!branch) return "缺少分站参数。用法：wikit-ban site 用户名 分站名 (加 -r 参数为移除)";
+        if (!wiki) return "缺少分站参数。用法：wikit-ban site 用户名 分站名 (加 -r 参数为移除)";
         if (!config.wikidotUsername || !config.wikidotPassword) return "未配置分站管理账号。请先在 Koishi 插件配置页中填写 Wikidot 账号和密码。";
 
-        const validBranches = ["all", ...Object.keys(branchInfo)];
-        if (!validBranches.includes(branch.toLowerCase())) return `检测不到名为“${branch}”的分部，请检查拼写是否正确。`;
+        const validwikies = ["all", ...Object.keys(WikiInfo)];
+        if (!validwikies.includes(wiki.toLowerCase())) return `检测不到名为“${wiki}”的分部，请检查拼写是否正确。`;
 
-        const wikiName = branchInfo[branch.toLowerCase()]?.wiki || branch.toLowerCase();
+        const wikiName = WikiInfo[wiki.toLowerCase()]?.wiki || wiki.toLowerCase();
         const actionType = opts.remove ? "remove" : "ban";
         
         let finalMsg = "";
@@ -506,15 +506,15 @@ export function apply(ctx: Context, config: Config): void {
     .subcommand("wikit-author <作者:string> [维基名称:string]", "查询作者及作者页。")
     .alias("wikit-au")
     .option("fuzzy", "-m 开启模糊搜索")
-    .action(async (argv: Argv, author: string, branch: string | undefined): Promise<any> => {
+    .action(async (argv: Argv, author: string, wiki: string | undefined): Promise<any> => {
       if (!checkProxyStatus(GRAPHQL_ENDPOINTS[0])) return <template>API请求失败，请稍后重试</template>;
 
       if (!author) return <template>请提供作者名。</template>;
 
-      const validBranches = ["all", ...Object.keys(branchInfo)];
-      if (branch && !validBranches.includes(branch.toLowerCase())) return <template>查询失败：检测不到名为“{branch}”的分部，请检查拼写是否正确。</template>;
+      const validwikies = ["all", ...Object.keys(WikiInfo)];
+      if (wiki && !validwikies.includes(wiki.toLowerCase())) return <template>查询失败：检测不到名为“{wiki}”的分部，请检查拼写是否正确。</template>;
 
-      let finalBranch = branch ? branch.toLowerCase() : ((await getDefaultBranch(argv.session)) || "all");
+      let finalWiki = wiki ? wiki.toLowerCase() : ((await getDefaultWiki(argv.session)) || "all");
       let authorName = author;
 
       const isRankQuery = /^#[0-9]{1,15}$/.test(authorName);
@@ -524,19 +524,19 @@ export function apply(ctx: Context, config: Config): void {
       if (!isRankQuery) authorName = authorName.replace(/["'“”‘’]/g, "").trim();
 
       try {
-        if (finalBranch === "all") queryString = isRankQuery ? queries.userRankQuery : queries.userGlobalQuery;
+        if (finalWiki === "all") queryString = isRankQuery ? queries.userRankQuery : queries.userGlobalQuery;
 
         const options: any = argv.options || {}; 
 
         if (options.fuzzy && !isRankQuery) {
-          const cacheKey = finalBranch;
+          const cacheKey = finalWiki;
           let allAuthors: any[] = [];
           const now = Date.now();
 
           if (fuzzyCache.has(cacheKey) && fuzzyCache.get(cacheKey)!.expiresAt > now) {
             allAuthors = fuzzyCache.get(cacheKey)!.data;
           } else {
-            const wikiName = finalBranch === "all" ? undefined : (branchInfo[finalBranch]?.wiki || finalBranch);
+            const wikiName = finalWiki === "all" ? undefined : (WikiInfo[finalWiki]?.wiki || finalWiki);
             const fuzzyQueryStr = wikiName 
                ? `query { authorRanking(wiki: "${wikiName}", by: RATING) { name } }`
                : `query { authorRanking(by: RATING) { name } }`;
@@ -556,15 +556,15 @@ export function apply(ctx: Context, config: Config): void {
           else return <template>未在排行榜中找到包含该关键词的作者。</template>;
         }
 
-        let result = await wikitApiRequest(authorName, finalBranch, 0, queryString);
+        let result = await wikitApiRequest(authorName, finalWiki, 0, queryString);
         const localBannedUsersCheck = config.bannedUsers || [];
 
         if (isRankQuery && (result as UserRankQueryResponse).authorRanking) {
           const rankData = result as UserRankQueryResponse;
           const matchedUser = rankData.authorRanking.find(u => u.rank === rankNumber && !localBannedUsersCheck.includes(u.name));
           if (matchedUser) {
-            let secondQuery = (!finalBranch || finalBranch === "all") ? queries.userGlobalQuery : queries.userQuery;
-            result = await wikitApiRequest(matchedUser.name, finalBranch, 0, secondQuery);
+            let secondQuery = (!finalWiki || finalWiki === "all") ? queries.userGlobalQuery : queries.userQuery;
+            result = await wikitApiRequest(matchedUser.name, finalWiki, 0, secondQuery);
           }
         }
 
@@ -574,7 +574,7 @@ export function apply(ctx: Context, config: Config): void {
         if ((!user || localBannedUsersCheck.includes(user.name)) && !isRankQuery && !options.fuzzy) {
           const unixName = authorName.toLowerCase().replace(/\s+/g, '-');
           if (unixName !== authorName) {
-            result = await wikitApiRequest(unixName, finalBranch, 0, queryString);
+            result = await wikitApiRequest(unixName, finalWiki, 0, queryString);
             data = result as any;
             user = (data.authorRanking?.find((u: any) => u.rank === rankNumber) || data.authorGlobalRank || data.authorWikiRank);
           }
@@ -592,7 +592,7 @@ export function apply(ctx: Context, config: Config): void {
           recentArticle = data.recent.nodes[0];
         } else if (total > 0) {
           try {
-            const wikiFilter = finalBranch !== "all" ? `wiki: ["${branchInfo[finalBranch]?.wiki || finalBranch}"], ` : "";
+            const wikiFilter = finalWiki !== "all" ? `wiki: ["${WikiInfo[finalWiki]?.wiki || finalWiki}"], ` : "";
             const recentGql = `query { articles(${wikiFilter}author: "${user.name}", pageSize: 1) { nodes { title url created_at } } }`;
             const resData = await rawGraphql(recentGql);
             if (resData?.data?.articles?.nodes?.length > 0) recentArticle = resData.data.articles.nodes[0];
@@ -625,13 +625,13 @@ export function apply(ctx: Context, config: Config): void {
             return passTag && passCategory;
           });
           
-          if (finalBranch && finalBranch !== "all") {
-             const wikiInfo = branchInfo[finalBranch];
-             if (wikiInfo) hubs = hubs.filter((n: any) => n.wiki === (wikiInfo.wiki || finalBranch));
+          if (finalWiki && finalWiki !== "all") {
+             const wikiInfo = WikiInfo[finalWiki];
+             if (wikiInfo) hubs = hubs.filter((n: any) => n.wiki === (wikiInfo.wiki || finalWiki));
           }
 
           if (hubs.length > 0) {
-            if (finalBranch && finalBranch !== "all") {
+            if (finalWiki && finalWiki !== "all") {
               authorPageNodes = <template><br />作者页：{hubs.map((h: any, index: number) => <template>{normalizeUrl(h.url)}{index < hubs.length - 1 ? " | " : ""}</template>)}</template>;
             } else {
               authorPageNodes = <template><br />作者页：<br />{hubs.map((h: any) => <template>[{h.wiki}] {normalizeUrl(h.url)}<br /></template>)}</template>;
@@ -661,21 +661,21 @@ export function apply(ctx: Context, config: Config): void {
 
       if (!args || args.length === 0) return <template>请提供文章标题。</template>;
 
-      const validBranches = ["all", ...Object.keys(branchInfo)];
+      const validWikies = ["all", ...Object.keys(WikiInfo)];
       const lastArg = args[args.length - 1].toLowerCase();
-      let finalBranch = "all";
+      let finalwiki = "all";
       let titleName = "";
 
       if (args.length > 1) {
-        if (validBranches.includes(lastArg)) {
-          finalBranch = lastArg;
+        if (validWikies.includes(lastArg)) {
+          finalwiki = lastArg;
           titleName = args.slice(0, -1).join(" ");
         } else {
           return <template>查询失败：检测不到名为“{lastArg}”的分部，请检查拼写是否正确。</template>;
         }
       } else {
         titleName = args[0];
-        finalBranch = (await getDefaultBranch(argv.session)) || "all";
+        finalwiki = (await getDefaultWiki(argv.session)) || "all";
       }
 
       if (!titleName) return <template>请提供文章标题。</template>;
@@ -691,12 +691,12 @@ export function apply(ctx: Context, config: Config): void {
             }`,
             variables: { query: titleName, tags: tagsArray }
           };
-          if (finalBranch !== "all") payload.variables.wiki = [branchInfo[finalBranch]?.wiki || finalBranch];
+          if (finalwiki !== "all") payload.variables.wiki = [WikiInfo[finalwiki]?.wiki || finalwiki];
           
           const data = await rawGraphql(payload.query, payload.variables);
           articles = data?.data?.articles?.nodes || [];
         } else {
-          const result = await wikitApiRequest(titleName, finalBranch, 0, queries.titleQuery);
+          const result = await wikitApiRequest(titleName, finalwiki, 0, queries.titleQuery);
           articles = (result as TitleQueryResponse)?.articles?.nodes || [];
         }
 
@@ -720,31 +720,31 @@ export function apply(ctx: Context, config: Config): void {
     });
 
   cmd
-    .subcommand("wikit-history <urlOrName:string> [branch:string]", "查询页面历史记录")
+    .subcommand("wikit-history <urlOrName:string> [wiki:string]", "查询页面历史记录")
     .alias("wikit-h")
-    .action(async (argv: Argv, urlOrName: string, branch: string | undefined): Promise<any> => {
+    .action(async (argv: Argv, urlOrName: string, wiki: string | undefined): Promise<any> => {
       if (!checkProxyStatus(GRAPHQL_ENDPOINTS[0])) return <template>API请求失败，请稍后重试</template>;
 
       if (!urlOrName) return <template>请提供页面完整链接或页面名称。</template>;
 
-      let finalBranch = branch;
+      let finalWiki = wiki;
       let finalUrl = urlOrName;
 
       if (urlOrName.startsWith("http")) {
         try {
           const urlObj = new URL(urlOrName);
           const hostParts = urlObj.hostname.split('.');
-          if (!finalBranch && hostParts.length >= 3) finalBranch = hostParts[0];
+          if (!finalWiki && hostParts.length >= 3) finalWiki = hostParts[0];
         } catch(e) {}
       } else {
-        finalBranch = finalBranch || (await getDefaultBranch(argv.session)) || "all";
-        if (finalBranch === "all") return <template>请指定分部名称，或直接输入页面的完整网址。</template>;
-        const wikiName = branchInfo[finalBranch.toLowerCase()]?.wiki || finalBranch;
+        finalWiki = finalWiki || (await getDefaultWiki(argv.session)) || "all";
+        if (finalWiki === "all") return <template>请指定分部名称，或直接输入页面的完整网址。</template>;
+        const wikiName = WikiInfo[finalWiki.toLowerCase()]?.wiki || finalWiki;
         finalUrl = `https://${wikiName}.wikidot.com/${urlOrName}`;
-        finalBranch = wikiName;
+        finalWiki = wikiName;
       }
 
-      const wikiName = finalBranch ? (branchInfo[finalBranch.toLowerCase()]?.wiki || finalBranch) : "syndication";
+      const wikiName = finalWiki ? (WikiInfo[finalWiki.toLowerCase()]?.wiki || finalWiki) : "syndication";
 
       try {
         const data = await pageHistory(wikiName, finalUrl);
