@@ -901,4 +901,18 @@ export function apply(ctx: Context, config: Config): void {
         return <template><quote id={messageId} />请求数据出错：{err.message}</template>;
       }
     });
+    cmd
+    .subcommand("wikit-reset-db", "【管理员专用】重置长歪的旧数据库表")
+    .action(async ({ session }): Promise<string> => {
+      const adminList = await getAdmins();
+      if (!adminList.includes(String(session.userId))) return "权限不足！";
+
+      try {
+        // 让 Koishi 底层的数据库驱动自己把旧表删掉
+        await ctx.database.drop("wikitQuerier");
+        return "微创手术成功：旧的 wikitQuerier 表已彻底删除！请立刻重启 Koishi！";
+      } catch (e: any) {
+        return `删除失败：${e.message}`;
+      }
+    });
 }
