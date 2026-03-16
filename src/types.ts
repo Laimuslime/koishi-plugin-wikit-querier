@@ -4,6 +4,8 @@ export interface Article {
   url: string;
   author: string;
   rating: number;
+  upvotes?: number;
+  downvotes?: number;
   comments: number;
 }
 
