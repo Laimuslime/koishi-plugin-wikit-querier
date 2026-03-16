@@ -12,7 +12,7 @@ import type { Article, AuthorRank, TitleQueryResponse, UserQueryResponse, UserRa
 
 declare module "koishi" {
   interface Tables {
-    wikitQuerierV2: WikitQuerierTable;
+    wikitQuerierV2: WikitQuerierV2Table;
   }
 }
 
@@ -163,7 +163,7 @@ export function apply(ctx: Context, config: Config): void {
       if (!wiki || !Object.keys(WikiInfo).includes(wiki) || wiki === "all") {
         return "维基名称不正确。";
       }
-      ctx.database.upsert("wikitQuerierV2", [{ channelId, platform, defaultWiki: wiki }], ["platform", "channelId"]); // 👉 这里加上 V2
+      ctx.database.upsert("wikitQuerierV2", [{ channelId, platform, defaultWiki: wiki }], ["platform", "channelId"]);
       return `已将本群默认查询维基设置为: ${wiki}`;
     });
 
@@ -691,7 +691,7 @@ export function apply(ctx: Context, config: Config): void {
           const tagsArray = options.tags.split(/[,，]/).map((t: string) => t.trim()).filter((t: string) => t);
           const payload: any = {
             query: `query tagSearch($wiki: [String], $query: String, $tags: [String!]) {
-              articles(wiki: $wiki, titleKeyword: $query, includeTags: $tags, page: 1, pageSize: 10) { nodes { title url author rating comments } }
+              articles(wiki: $wiki, titleKeyword: $query, includeTags: $tags, page: 1, pageSize: 10) { nodes { title url author rating upvotes downvotes comments } }
             }`,
             variables: { query: titleName, tags: tagsArray }
           };
@@ -715,7 +715,7 @@ export function apply(ctx: Context, config: Config): void {
         return (
           <template>
             <quote id={argv.session.event.message.id} />
-            {article.title}<br />评分：{article.rating}<br />评论：{article.comments}<br />作者：{article.author || "已注销"}<br />{normalizeUrl(article.url)}
+            {article.title}<br />评分：{article.rating} (+{article.upvotes || 0}, -{article.downvotes || 0})<br />评论：{article.comments}<br />作者：{article.author || "已注销"}<br />{normalizeUrl(article.url)}
           </template>
         );
       } catch (err: any) {
@@ -845,7 +845,7 @@ export function apply(ctx: Context, config: Config): void {
         const maxPages = 30;
 
         while (hasNextPage && currentPage <= maxPages) {
-          const graphqlQuery = `query { articles(author: "${wikidotId}", page: ${currentPage}, pageSize: 100) { nodes { title rating wiki } pageInfo { total hasNextPage } } }`;
+          const graphqlQuery = `query { articles(author: "${wikidotId}", page: ${currentPage}, pageSize: 100) { nodes { title rating upvotes downvotes wiki } pageInfo { total hasNextPage } } }`;
           const gqlData = await rawGraphql(graphqlQuery);
           const articlesNode = gqlData?.data?.articles;
           
@@ -882,7 +882,7 @@ export function apply(ctx: Context, config: Config): void {
                 <message>
                   <template>
                     第 {index * chunkSize + 1} ~ {Math.min((index + 1) * chunkSize, validArticles.length)} 篇：<br />
-                    {chunk.map((a: any) => <template>{a.title} 评分：{a.rating} 所属维基：{a.wiki}<br /></template>)}
+                    {chunk.map((a: any) => <template>{a.title} 评分：{a.rating} (+{a.upvotes || 0}, -{a.downvotes || 0}) 所属维基：{a.wiki}<br /></template>)}
                   </template>
                 </message>
               ))}
@@ -894,7 +894,7 @@ export function apply(ctx: Context, config: Config): void {
           <template>
             <quote id={messageId} />
             {headerNode}<br />
-            {validArticles.map((a: any) => <template>{a.title} 评分：{a.rating} 所属维基：{a.wiki}<br /></template>)}
+            {validArticles.map((a: any) => <template>{a.title} 评分：{a.rating} (+{a.upvotes || 0}, -{a.downvotes || 0}) 所属维基：{a.wiki}<br /></template>)}
           </template>
         );
       } catch (err: any) {
@@ -909,7 +909,7 @@ export function apply(ctx: Context, config: Config): void {
 
       try {
         // 让 Koishi 底层的数据库驱动自己把旧表删掉
-        await ctx.database.drop("wikitQuerier");
+        await (ctx.database as any).drop("wikitQuerier");
         return "微创手术成功：旧的 wikitQuerier 表已彻底删除！请立刻重启 Koishi！";
       } catch (e: any) {
         return `删除失败：${e.message}`;
