@@ -8,10 +8,10 @@
     "lib"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/Laimuslime/koishi-plugin-wikit-querier",
+  "homepage": "https://github.com/WikitTeam/koishi-plugin-wikit-querier",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Laimuslime/koishi-plugin-wikit-querier.git"
+    "url": "git+https://github.com/WikitTeam/koishi-plugin-wikit-querier.git"
   },
   "scripts": {
     "build": "tsc"
