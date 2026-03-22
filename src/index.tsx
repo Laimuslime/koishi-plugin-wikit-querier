@@ -507,19 +507,34 @@ export function apply(ctx: Context, config: Config): void {
     });
 
   cmd
-    .subcommand("wikit-author <作者:string> [维基名称:string]", "查询作者及作者页。")
+    .subcommand("wikit-author <...args:string>", "查询作者及作者页。")
     .alias("wikit-au")
     .option("fuzzy", "-m 开启模糊搜索")
-    .action(async (argv: Argv, author: string, wiki: string | undefined): Promise<any> => {
+    .action(async (argv: Argv, ...args: string[]): Promise<any> => {
       if (!checkProxyStatus(GRAPHQL_ENDPOINTS[0])) return <template>API请求失败，请稍后重试</template>;
 
-      if (!author) return <template>请提供作者名。</template>;
+      if (!args || args.length === 0) return <template>请提供作者名。</template>;
 
-      const validwikies = ["all", ...Object.keys(WikiInfo)];
-      if (wiki && !validwikies.includes(wiki.toLowerCase())) return <template>查询失败：检测不到名为“{wiki}”的维基，请检查拼写是否正确。</template>;
+      const validWikies = ["all", ...Object.keys(WikiInfo)];
+      let finalWiki = "all";
+      let authorName = "";
 
-      let finalWiki = wiki ? wiki.toLowerCase() : ((await getDefaultWiki(argv.session)) || "all");
-      let authorName = author;
+      if (args.length > 1) {
+        const lastArg = args[args.length - 1].toLowerCase();
+        // 如果最后一个词是维基名（比如 all, ubmh），就把前面的全拼起来当作者名
+        if (validWikies.includes(lastArg)) {
+          finalWiki = lastArg;
+          authorName = args.slice(0, -1).join(" ");
+        } else {
+          // 如果最后一个词不是维基名，说明这一整串（比如 Verlian Yasmine）都是作者名！
+          authorName = args.join(" ");
+          finalWiki = (await getDefaultWiki(argv.session)) || "all";
+        }
+      } else {
+        // 只有一个词的情况
+        authorName = args[0];
+        finalWiki = (await getDefaultWiki(argv.session)) || "all";
+      }
 
       const isRankQuery = /^#[0-9]{1,15}$/.test(authorName);
       const rankNumber = isRankQuery ? Number(authorName.slice(1)) : null;
