@@ -24,7 +24,6 @@ export const WikiInfo: Record<string, { wiki: string }> = {
   "wop": { wiki: "write-on-paper" },
   "fr": { wiki: "backrooms-split-library" },
   "f": { wiki: "backrooms-f" },
-  "our": {wiki: "our-backroom" },
   "cas": {wiki: "cas-wiki-cn" }
 };
 
